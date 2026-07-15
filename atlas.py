@@ -131,22 +131,28 @@ MODELO_HTML = """<!DOCTYPE html>
 <script>__PLOTLY__</script>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-  header { padding: 16px 28px; background: #1e293b; border-bottom: 1px solid #334155; }
-  header h1 { margin: 0; font-size: 22px; }
-  header p { margin: 4px 0 0; color: #94a3b8; font-size: 13px; }
-  .controls { display: flex; flex-wrap: wrap; gap: 18px; padding: 14px 28px; background: #16213a; align-items: flex-start; }
-  .controls label { font-size: 13px; color: #94a3b8; display: block; margin-bottom: 4px; }
-  select, input[type=range] { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 8px; padding: 7px 10px; font-size: 14px; }
-  select[multiple] { min-width: 230px; height: 108px; }
-  .tabs { display: flex; gap: 8px; padding: 12px 28px 0; }
-  .tab { padding: 9px 18px; border-radius: 10px 10px 0 0; background: #1e293b; cursor: pointer; border: 1px solid #334155; border-bottom: none; font-size: 14px; user-select: none; }
-  .tab.active { background: #2563eb; border-color: #2563eb; color: #fff; }
-  .panel { display: none; padding: 10px 28px 28px; }
+  body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(180deg, #0b1120, #0f172a 40%); color: #e2e8f0; min-height: 100vh; }
+  header { padding: 20px 32px; background: linear-gradient(90deg, #16213a, #1e293b 60%, #16213a); border-bottom: 1px solid #334155; }
+  header h1 { margin: 0; font-size: 24px; letter-spacing: .3px; }
+  header p { margin: 5px 0 0; color: #94a3b8; font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 24px; padding: 16px 32px; background: #111a2e; align-items: flex-start; border-bottom: 1px solid #1e293b; }
+  .controls label { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: #7c8db0; display: block; margin-bottom: 6px; }
+  select, input[type=text] { background: #1e293b; color: #e2e8f0; border: 1px solid #3b4a63; border-radius: 10px; padding: 8px 12px; font-size: 14px; outline: none; }
+  select:focus, input[type=text]:focus { border-color: #3b82f6; }
+  select[multiple] { min-width: 260px; height: 108px; }
+  select[multiple] option { padding: 3px 8px; }
+  select[multiple] option:checked { background: #2563eb linear-gradient(0deg, #2563eb, #2563eb); color: #fff; }
+  input[type=text] { display: block; width: 260px; margin-bottom: 6px; padding: 6px 12px; }
+  input[type=range] { accent-color: #3b82f6; margin-top: 8px; }
+  .tabs { display: flex; gap: 8px; padding: 16px 32px 0; }
+  .tab { padding: 10px 22px; border-radius: 12px 12px 0 0; background: #1a2540; cursor: pointer; border: 1px solid #2b3a5c; border-bottom: none; font-size: 14px; user-select: none; transition: background .15s; }
+  .tab:hover { background: #22304f; }
+  .tab.active { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+  .panel { display: none; padding: 10px 32px 32px; }
   .panel.active { display: block; }
-  #mapa, #linhas { width: 100%; height: 66vh; background: #1e293b; border-radius: 12px; }
-  #status { padding: 4px 28px; font-size: 13px; color: #94a3b8; min-height: 20px; }
-  .anoval { font-weight: bold; color: #e2e8f0; }
+  #mapa, #linhas { width: 100%; height: 68vh; background: #131e35; border-radius: 14px; border: 1px solid #1e293b; box-shadow: 0 10px 34px rgba(0,0,0,.4); }
+  #status { padding: 6px 32px; font-size: 13px; color: #7c8db0; min-height: 22px; }
+  .anoval { font-weight: bold; color: #60a5fa; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -166,6 +172,7 @@ MODELO_HTML = """<!DOCTYPE html>
   </div>
   <div>
     <label>Países do gráfico de linha (Ctrl+clique p/ vários)</label>
+    <input type="text" id="busca" placeholder="🔎 Buscar país...">
     <select id="paises" multiple></select>
   </div>
 </div>
@@ -209,6 +216,11 @@ function percentil(arr, p) {
   return s[Math.round(p * (s.length - 1))];
 }
 
+// tooltip escuro e legível + cores vivas para as linhas
+const HOVER = { bgcolor: "#0f172a", bordercolor: "#3b82f6", font: { color: "#f1f5f9", size: 13 } };
+const CORES = ["#60a5fa", "#fb923c", "#4ade80", "#f87171", "#c084fc", "#facc15", "#2dd4bf", "#fb7185", "#a3e635", "#38bdf8"];
+const EIXO = { gridcolor: "#243350", tickfont: { color: "#cbd5e1", size: 12 }, titlefont: { color: "#e2e8f0" } };
+
 // valor mais recente do país até o ano escolhido (janela de 6 anos)
 function valorNoAno(serie, ano) {
   let achado = null;
@@ -236,7 +248,7 @@ function desenhaMapa() {
   const zmin = percentil(vals, 0.02), zmax = percentil(vals, 0.98);
 
   // colorbar legível: na escala log mostra 1 mi, 1 bi, 1 tri em vez do expoente
-  const colorbar = { title: { text: nome, font: { color: "#e2e8f0", size: 11 } }, tickfont: { color: "#94a3b8" } };
+  const colorbar = { title: { text: nome, font: { color: "#e2e8f0", size: 12 } }, tickfont: { color: "#cbd5e1", size: 12 } };
   if (usaLog) {
     const tv = [];
     for (let e = Math.ceil(zmin); e <= Math.floor(zmax); e++) tv.push(e);
@@ -254,8 +266,9 @@ function desenhaMapa() {
   }], {
     geo: { projection: { type: "natural earth" }, bgcolor: "rgba(0,0,0,0)", showframe: false, landcolor: "#1e293b", coastlinecolor: "#334155" },
     paper_bgcolor: "rgba(0,0,0,0)", font: { color: "#e2e8f0" },
+    hoverlabel: HOVER,
     margin: { l: 0, r: 0, t: 42, b: 0 },
-    title: { text: `${nome} — ${ano}`, font: { size: 15 } },
+    title: { text: `${nome} — ${ano}`, font: { size: 16 } },
   }, { responsive: true });
   $("status").textContent = `${locs.length} países com dados para ${nome} em ${ano} (usa o dado mais recente até 5 anos antes).`;
 }
@@ -265,22 +278,24 @@ function desenhaLinhas() {
   const [codigo, , usaLog] = INDICADORES[nome];
   const sel = [...$("paises").selectedOptions].map(o => o.value);
   if (!sel.length) { $("status").textContent = "Selecione países acima (Ctrl+clique)."; return; }
-  const traces = sel.map(iso3 => {
+  const traces = sel.map((iso3, i) => {
     const serie = (DADOS[codigo] || {})[iso3] || [];
     return {
       x: serie.map(p => p[0]), y: serie.map(p => p[1]),
       mode: "lines", name: PAISES[iso3] || iso3,
+      line: { width: 2.6, color: CORES[i % CORES.length] },
       hovertemplate: "%{y:,.2f}<extra>" + (PAISES[iso3] || iso3) + "</extra>",
     };
   });
   Plotly.react("linhas", traces, {
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     font: { color: "#e2e8f0" }, hovermode: "x unified",
-    title: { text: `${nome} — evolução histórica`, font: { size: 15 } },
-    xaxis: { title: "Ano", gridcolor: "#334155" },
-    yaxis: { title: nome, gridcolor: "#334155", type: usaLog ? "log" : "linear" },
-    margin: { l: 75, r: 20, t: 45, b: 50 },
-    legend: { orientation: "h", y: -0.16 },
+    hoverlabel: HOVER,
+    title: { text: `${nome} — evolução histórica`, font: { size: 16 } },
+    xaxis: { ...EIXO, title: "Ano" },
+    yaxis: { ...EIXO, title: nome, type: usaLog ? "log" : "linear" },
+    margin: { l: 80, r: 24, t: 48, b: 52 },
+    legend: { orientation: "h", y: -0.16, font: { size: 13, color: "#e2e8f0" } },
   }, { responsive: true });
   $("status").textContent = "";
 }
@@ -306,6 +321,11 @@ Object.entries(PAISES)
     if (["BRA", "USA", "CHN", "DEU", "JPN"].includes(iso3)) o.selected = true;
     selPaises.appendChild(o);
   });
+
+$("busca").oninput = e => {
+  const q = e.target.value.toLowerCase();
+  for (const o of selPaises.options) o.hidden = !o.textContent.toLowerCase().includes(q);
+};
 
 $("indicador").onchange = atualiza;
 $("ano").oninput = () => { $("anoval").textContent = $("ano").value; };
