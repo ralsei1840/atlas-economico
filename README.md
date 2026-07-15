@@ -7,7 +7,9 @@ App em Python que baixa dados reais do [Banco Mundial](https://data.worldbank.or
 
 ## Indicadores
 
-PIB total, PIB per capita, RNB per capita, população, inflação anual, expectativa de vida e índice de Gini. Para inflação e Gini a escala de cores é invertida (menor = mais verde).
+PIB total, PIB per capita, RNB per capita, população, inflação anual, expectativa de vida, índice de Gini e IDH. Para inflação e Gini a escala de cores é invertida (menor = mais verde).
+
+O IDH vem do PNUD/ONU (via [Our World in Data](https://ourworldindata.org/human-development-index)); os demais, da API do Banco Mundial.
 
 ## Como usar
 

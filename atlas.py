@@ -26,6 +26,8 @@ except ImportError:
 
 API = "https://api.worldbank.org/v2"
 PLOTLY_URL = "https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"
+# IDH é da ONU (PNUD), não do Banco Mundial — vem do Our World in Data
+IDH_URL = "https://ourworldindata.org/grapher/human-development-index.csv"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(AQUI, "dados_banco_mundial.json")
 SAIDA = os.path.join(AQUI, "atlas.html")
@@ -39,6 +41,7 @@ INDICADORES = {
     "Inflação anual (%)":         ("FP.CPI.TOTL.ZG", False, False),
     "Expectativa de vida (anos)": ("SP.DYN.LE00.IN", True,  False),
     "Índice de Gini":             ("SI.POV.GINI",    False, False),
+    "IDH (0 a 1)":                ("IDH",            True,  False),
 }
 
 
@@ -76,6 +79,23 @@ def baixar_indicador(codigo, paises):
     return series
 
 
+def baixar_idh(paises):
+    """IDH (PNUD/ONU) via Our World in Data, com todos os anos desde 1990."""
+    import csv
+    import io
+    r = requests.get(IDH_URL, timeout=120, headers={"User-Agent": "atlas-economico"})
+    r.raise_for_status()
+    series = {}
+    for linha in csv.DictReader(io.StringIO(r.text)):
+        iso3 = linha.get("Code", "")
+        valor = linha.get("Human Development Index", "")
+        if iso3 in paises and valor:
+            series.setdefault(iso3, []).append([int(linha["Year"]), float(valor)])
+    for iso3 in series:
+        series[iso3].sort()
+    return series
+
+
 def baixar_tudo():
     print("Baixando lista de países...")
     paises = baixar_paises()
@@ -83,7 +103,7 @@ def baixar_tudo():
     dados = {}
     for i, (nome, (codigo, _, _)) in enumerate(INDICADORES.items(), 1):
         print(f"Baixando {i}/{len(INDICADORES)}: {nome} ...")
-        dados[codigo] = baixar_indicador(codigo, paises)
+        dados[codigo] = baixar_idh(paises) if codigo == "IDH" else baixar_indicador(codigo, paises)
     with open(CACHE, "w", encoding="utf-8") as f:
         json.dump({"paises": paises, "dados": dados}, f)
     print(f"Cache salvo em {CACHE}")
