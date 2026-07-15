@@ -1,0 +1,9 @@
+# gerados em tempo de execução
+dados_banco_mundial.json
+plotly.min.js
+atlas.html
+
+# python
+__pycache__/
+venv/
+*.pyc
